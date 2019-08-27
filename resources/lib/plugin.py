@@ -37,8 +37,24 @@ def index():
         raise_notification()
 
     match = re.compile(r'<a title=".+? - (.+?)" href="/play/direto/(.+?)".*?\n.*?\n.*?<img alt=".+?" src ="(.+?)"').findall(req) #class="item">\n.+?<div class="img-holder">\n.+?<img alt=".+?" src ="(.+?)" class="img-responsive">').findall(req)
+    from Cryptodome.Cipher import AES
+    from Cryptodome.Util import Padding
+    
+    if kodiutils.PY3:
+        key = b'0123456789abcdef'
+        IV = 16 * b'\x00'
+    else:
+        key = '0123456789abcdef'
+        IV = 16 * '\x00'
+
+    mode = AES.MODE_CBC
+    encryptor = AES.new(key, mode, IV=IV)
     
     for rtp_channel in RTP_CHANNELS:
+        if kodiutils.PY3:
+            decrypted_channel_name = str(Padding.unpad(encryptor.decrypt(bytes.fromhex(rtp_channel["name"])), 16), "utf-8")
+        else:
+            decrypted_channel_name = Padding.unpad(encryptor.decrypt(rtp_channel["name"].decode("hex")), 16)
         dvr = "Not available"
         progimg = ""
         for prog, key, img in match:
@@ -50,7 +66,7 @@ def index():
                 break
         
         liz = ListItem("[B][COLOR blue]{}[/B][/COLOR] ({})".format(
-            kodiutils.compat_py23str(rtp_channel["name"]),
+            kodiutils.compat_py23str(decrypted_channel_name),
             kodiutils.compat_py23str(dvr))
         )
         liz.setArt({"thumb": progimg, "icon": progimg, "fanart": kodiutils.FANART})
@@ -60,7 +76,7 @@ def index():
             plugin.handle,
             plugin.url_for(
                 play,
-                label=kodiutils.compat_py23str(rtp_channel["name"]),
+                label=kodiutils.compat_py23str(decrypted_channel_name),
                 channel=kodiutils.compat_py23str(rtp_channel["id"]),
                 img=kodiutils.compat_py23str(progimg),
                 prog=kodiutils.compat_py23str(dvr)
