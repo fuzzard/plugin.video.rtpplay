@@ -3,7 +3,6 @@
 import routing
 import logging
 import requests
-import inputstreamhelper
 import re
 import urllib
 import xbmcaddon
@@ -113,27 +112,6 @@ def play():
                         break
                     else:
                         continue
-                elif stream["type"] == "dashwv":
-                    is_helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')
-                    if is_helper.check_inputstream():
-                        # Grab token
-                        src = requests.get(stream["tk"], headers=HEADERS).text
-                        tk = re.compile('k: \"(.+?)\"', re.DOTALL).findall(src)
-                        if tk:
-                            payload = '{"drm_info":[D{SSM}], "kid": "E13506F7439BEAE7DDF0489FCDDF7481", "token":"' + tk[0] + '"}'
-                            liz = ListItem("[B][COLOR blue]{}[/B][/COLOR] ({})".format(
-                                kodiutils.compat_py23str(name),
-                                kodiutils.compat_py23str(prog))
-                            )
-                            liz.setPath(stream["url"])
-                            liz.setProperty('inputstream.adaptive.license_type', 'com.widevine.alpha')
-                            liz.setProperty('inputstream.adaptive.manifest_type', 'mpd')
-                            liz.setProperty('inputstreamaddon', 'inputstream.adaptive')
-                            liz.setProperty('inputstream.adaptive.stream_headers', urlencode(HEADERS))
-                            liz.setMimeType('application/dash+xml')
-                            liz.setProperty('inputstream.adaptive.license_key', '{}|{}|{}|'.format(stream["license"], "Content-Type=application/json", urllib.quote(payload)))
-                            liz.setContentLookup(False)
-                            setResolvedUrl(plugin.handle, True, liz)
 
 
 def raise_notification():
